@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Panel - {{ app_name }}{% endblock %}
+{% block body %}
+<main class="max-w-5xl mx-auto px-6 py-10">
+  <h1 class="text-2xl font-bold">{{ app_name }} · Panel Developer</h1>
+
+  <div class="mt-8 grid grid-cols-2 md:grid-cols-5 gap-4">
+    {% for label, value in [
+      ("Akun IG terhubung", stats.ig_accounts),
+      ("CMS terhubung", stats.tenants),
+      ("Job hari ini", stats.jobs_today),
+      ("Download (MB)", stats.downloaded_mb),
+      ("Upload (MB)", stats.uploaded_mb)
+    ] %}
+    <div class="rounded-xl bg-white p-4 shadow-sm border">
+      <div class="text-sm text-slate-500">{{ label }}</div>
+      <div class="text-3xl font-semibold mt-1">{{ value }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</main>
+{% endblock %}
