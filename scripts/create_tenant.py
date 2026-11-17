@@ -6,20 +6,19 @@ from app.db import SessionLocal
 from app.models import AuditLog, Tenant
 
 
-def main(name: str) -> None:
+def main(name: str, origins: list[str]) -> None:
     raw_key = "vc_" + secrets.token_urlsafe(32)
     with SessionLocal() as db:
         tenant = Tenant(
             name=name,
             api_key_prefix=raw_key[:11],
             api_key_hash=hashlib.sha256(raw_key.encode()).hexdigest(),
+            allowed_origins=[o.rstrip("/").lower() for o in origins],
         )
         db.add(tenant)
         db.flush()
-        db.add(AuditLog(
-            tenant_id=tenant.id, actor="cli",
-            action="tenant.created", detail={"name": name},
-        ))
+        db.add(AuditLog(tenant_id=tenant.id, actor="cli",
+                        action="tenant.created", detail={"name": name}))
         db.commit()
         tenant_id = tenant.id
 
@@ -28,6 +27,6 @@ def main(name: str) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        sys.exit('Pemakaian: python -m scripts.create_tenant "Nama CMS"')
-    main(sys.argv[1])
+    if len(sys.argv) < 3:
+        sys.exit('Pemakaian: python -m scripts.create_tenant "Nama CMS" https://cms.contoh.com [origin lain...]')
+    main(sys.argv[1], sys.argv[2:])

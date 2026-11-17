@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="max-w-md mx-auto px-6 py-24 text-center">
+  {% if valid %}
+    <h1 class="text-2xl font-bold">Hubungkan akun Instagram</h1>
+    <p class="mt-3 text-slate-600">
+      Untuk layanan <strong>{{ tenant_name }}</strong>. Kami hanya membaca video
+      dari akun Anda dan tidak pernah melihat password Anda.
+    </p>
+    <button disabled class="mt-8 px-6 py-3 rounded-lg bg-slate-300 text-white">
+      Login Instagram (segera hadir)
+    </button>
+  {% else %}
+    <h1 class="text-2xl font-bold">Tautan tidak berlaku</h1>
+    <p class="mt-3 text-slate-600">
+      Tautan ini sudah kedaluwarsa atau sudah dipakai. Silakan mulai lagi dari aplikasi Anda.
+    </p>
+  {% endif %}
+</main>
+{% endblock %}

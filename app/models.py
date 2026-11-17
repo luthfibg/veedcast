@@ -17,6 +17,7 @@ class Tenant(Base):
     """Satu aplikasi CMS yang memakai Veedcast."""
     __tablename__ = "tenants"
 
+    allowed_origins: Mapped[list | None] = mapped_column(JSON, default=list)
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(120))
     api_key_prefix: Mapped[str] = mapped_column(String(16), index=True)
@@ -108,3 +109,17 @@ class UsageDaily(Base):
     jobs_count: Mapped[int] = mapped_column(Integer, default=0)
     bytes_downloaded: Mapped[int] = mapped_column(BigInteger, default=0)
     bytes_uploaded: Mapped[int] = mapped_column(BigInteger, default=0)
+
+class ConnectSession(Base):
+    """Sesi sekali pakai untuk alur tombol Connect."""
+    __tablename__ = "connect_sessions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(ForeignKey("tenants.id"), index=True)
+    state: Mapped[str] = mapped_column(String(64), unique=True)
+    external_ref: Mapped[str] = mapped_column(String(120))
+    return_url: Mapped[str] = mapped_column(String(500))
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending|completed|failed
+    ig_account_id: Mapped[int | None] = mapped_column(ForeignKey("ig_accounts.id"))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
