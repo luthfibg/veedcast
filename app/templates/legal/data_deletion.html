@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Penghapusan Data - {{ app_name }}{% endblock %}
+{% block body %}
+<main class="max-w-2xl mx-auto px-6 py-16 space-y-4 leading-relaxed">
+  <h1 class="text-3xl font-bold">Penghapusan Data</h1>
+  <p>Untuk menghapus data Anda dari {{ app_name }}:</p>
+  <ol class="list-decimal pl-6 space-y-1">
+    <li>Putus koneksi: di Instagram buka Pengaturan → Aplikasi dan situs web, lalu hapus
+    {{ app_name }}. Token Anda akan tidak berlaku.</li>
+    <li>Kirim email ke [EMAIL KONTAK] dengan username Instagram Anda dan permintaan
+    penghapusan.</li>
+  </ol>
+  <p>Kami akan menghapus token, metadata, dan file video yang tersimpan, serta
+  memberi konfirmasi melalui email setelah selesai.</p>
+</main>
+{% endblock %}

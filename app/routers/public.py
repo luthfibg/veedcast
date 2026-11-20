@@ -41,3 +41,23 @@ def connect_page(request: Request, state: str, db: Session = Depends(get_db)):
         },
         status_code=200 if valid else 410,
     )
+
+@router.get("/privacy")
+def privacy(request: Request):
+    return templates.TemplateResponse(
+        request, "legal/privacy.html", {"app_name": settings.app_name}
+    )
+
+
+@router.get("/terms")
+def terms(request: Request):
+    return templates.TemplateResponse(
+        request, "legal/terms.html", {"app_name": settings.app_name}
+    )
+
+
+@router.get("/data-deletion")
+def data_deletion(request: Request):
+    return templates.TemplateResponse(
+        request, "legal/data_deletion.html", {"app_name": settings.app_name}
+    )

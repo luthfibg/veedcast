@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Kebijakan Privasi - {{ app_name }}{% endblock %}
+{% block body %}
+<main class="max-w-2xl mx-auto px-6 py-16 space-y-4 leading-relaxed">
+  <h1 class="text-3xl font-bold">Kebijakan Privasi</h1>
+  <p class="text-sm text-slate-500">Terakhir diperbarui: 20 November 2026</p>
+
+  <p>{{ app_name }} dikelola oleh [NAMA PENGELOLA]. Layanan ini menayangkan video dari akun
+  Instagram profesional yang sudah memberi izin ke layar digital signage milik penyedia layanan
+  yang menghubungkan akun tersebut.</p>
+
+  <h2 class="text-xl font-semibold pt-4">Data yang kami proses</h2>
+  <ul class="list-disc pl-6 space-y-1">
+    <li>ID dan username akun Instagram yang Anda hubungkan.</li>
+    <li>Token akses yang diberikan Instagram/Meta, disimpan terenkripsi.</li>
+    <li>Metadata dan file video dari akun tersebut (ID media, keterangan, tanggal, video yang
+    diizinkan untuk diunduh oleh Instagram).</li>
+    <li>Catatan teknis: waktu dan alamat IP saat akun dihubungkan atau diputus, serta log
+    pemrosesan.</li>
+  </ul>
+  <p>Kami tidak mengetahui atau menyimpan password Instagram Anda, dan tidak membaca pesan
+  pribadi.</p>
+
+  <h2 class="text-xl font-semibold pt-4">Tujuan penggunaan</h2>
+  <p>Data digunakan hanya untuk mendeteksi video baru, memprosesnya agar sesuai perangkat
+  tayang, dan menyediakannya bagi penyedia layanan yang Anda tunjuk untuk ditayangkan di
+  layar. Kami tidak menjual data dan tidak memakainya untuk iklan.</p>
+
+  <h2 class="text-xl font-semibold pt-4">Pihak yang menerima data</h2>
+  <p>Video hasil proses dapat diakses oleh penyedia layanan (aplikasi CMS) yang meminta
+  koneksi akun Anda. Infrastruktur kami memakai penyedia pihak ketiga untuk hosting, database,
+  dan penyimpanan file.</p>
+
+  <h2 class="text-xl font-semibold pt-4">Penyimpanan dan penghapusan</h2>
+  <p>Data disimpan selama akun terhubung. Anda dapat memutus koneksi kapan saja lewat
+  pengaturan Instagram (Pengaturan → Aplikasi dan situs web) atau melalui penyedia layanan Anda.
+  Tata cara permintaan penghapusan data ada di halaman
+  <a class="underline" href="/data-deletion">Penghapusan Data</a>.</p>
+
+  <h2 class="text-xl font-semibold pt-4">Kontak</h2>
+  <p>Pertanyaan atau permintaan terkait data: [EMAIL KONTAK].</p>
+</main>
+{% endblock %}
