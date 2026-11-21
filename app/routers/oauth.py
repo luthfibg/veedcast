@@ -14,6 +14,7 @@ from app.models import ConnectSession, IGAccount, Job
 from app.services import instagram as ig
 from app.templating import templates
 from app.utils import as_utc
+from fastapi import HTTPException
 
 router = APIRouter()
 
@@ -58,7 +59,20 @@ def connect_start(request: Request, state: str, db: Session = Depends(get_db)):
     s = _load_pending(db, state)
     if s is None:
         return _invalid_page(request)
-    return RedirectResponse(ig.build_login_url(state), status_code=302)
+
+    if not (settings.meta_app_id and settings.meta_app_secret and settings.meta_config_id):
+        raise HTTPException(503, "Konfigurasi Meta belum lengkap")
+    try:
+        encrypt("selftest")
+    except Exception:
+        raise HTTPException(503, "TOKEN_ENCRYPTION_KEY tidak valid")
+
+    resp = RedirectResponse(ig.build_login_url(state), status_code=302)
+    resp.set_cookie(
+        "vc_state", state, max_age=900, httponly=True, samesite="lax",
+        secure=(settings.environment == "production"), path="/oauth",
+    )
+    return resp
 
 
 @router.get("/oauth/callback")
@@ -71,6 +85,9 @@ def oauth_callback(
 ):
     s = _load_pending(db, state)
     if s is None:
+        return _invalid_page(request)
+
+    if request.cookies.get("vc_state") != state:
         return _invalid_page(request)
 
     if error or not code:

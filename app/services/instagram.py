@@ -25,6 +25,7 @@ def build_login_url(state: str) -> str:
         "client_id": settings.meta_app_id,
         "redirect_uri": redirect_uri(),
         "response_type": "code",
+        "override_default_response_type": "true",
         "config_id": settings.meta_config_id,
         "state": state,
     }
@@ -32,14 +33,19 @@ def build_login_url(state: str) -> str:
 
 
 def _get(path: str, params: dict) -> dict:
-    r = httpx.get(f"{GRAPH}{path}", params=params, timeout=20)
+    try:
+        r = httpx.get(f"{GRAPH}{path}", params=params, timeout=20)
+    except httpx.HTTPError as exc:
+        raise MetaError(f"network: {type(exc).__name__}") from None
+    try:
+        body = r.json()
+    except ValueError:
+        body = {}
     if r.status_code >= 400:
-        try:
-            msg = r.json().get("error", {}).get("message", "")
-        except ValueError:
-            msg = ""
+        err = body.get("error") if isinstance(body, dict) else None
+        msg = err.get("message", "") if isinstance(err, dict) else ""
         raise MetaError(f"HTTP {r.status_code}: {msg}"[:300])
-    return r.json()
+    return body if isinstance(body, dict) else {}
 
 
 def exchange_code(code: str) -> str:
@@ -56,10 +62,12 @@ def exchange_code(code: str) -> str:
 
 
 def list_instagram_accounts(token: str) -> list[dict]:
-    """Akun Instagram yang dibagikan klien ke app, dengan id dan username."""
     data = _get("/me/assigned_instagram_accounts", {"access_token": token})
     accounts = []
     for item in data.get("data", []):
+        if "id" not in item:
+            continue
         info = _get(f"/{item['id']}", {"fields": "id,username", "access_token": token})
-        accounts.append({"id": info["id"], "username": info.get("username", "")})
+        if "id" in info:
+            accounts.append({"id": info["id"], "username": info.get("username", "")})
     return accounts

@@ -19,6 +19,8 @@ security = HTTPBasic()
 def require_admin(creds: HTTPBasicCredentials = Depends(security)):
     user_ok = compare_digest(creds.username.encode(), b"admin")
     pass_ok = compare_digest(creds.password.encode(), settings.admin_password.encode())
+    if not settings.admin_password:
+        raise HTTPException(status_code=503, detail="ADMIN_PASSWORD belum diset")
     if not (user_ok and pass_ok):
         raise HTTPException(
             status_code=401,

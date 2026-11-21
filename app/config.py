@@ -5,7 +5,7 @@ from pydantic import field_validator
 class Settings(BaseSettings):
     app_name: str = "Veedcast"
     environment: str = "development"
-    admin_password: str = "mble'e"
+    admin_password: str = ""
     database_url: str = "sqlite:///./veedcast.db"
     base_url: str = "http://127.0.0.1:8000"
     meta_app_id: str = ""
