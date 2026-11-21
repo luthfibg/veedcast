@@ -64,6 +64,10 @@ class MediaItem(Base):
     bytes_in: Mapped[int] = mapped_column(BigInteger, default=0)
     bytes_out: Mapped[int] = mapped_column(BigInteger, default=0)
     error: Mapped[str | None] = mapped_column(Text)
+    media_type: Mapped[str | None] = mapped_column(String(20))
+    permalink: Mapped[str | None] = mapped_column(String(300))
+    posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    skip_reason: Mapped[str | None] = mapped_column(String(40))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

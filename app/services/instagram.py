@@ -13,7 +13,9 @@ DIALOG = f"https://www.facebook.com/{settings.meta_graph_version}/dialog/oauth"
 
 
 class MetaError(Exception):
-    pass
+    def __init__(self, message: str, code: int | None = None):
+        super().__init__(message)
+        self.code = code
 
 
 def redirect_uri() -> str:
@@ -44,7 +46,8 @@ def _get(path: str, params: dict) -> dict:
     if r.status_code >= 400:
         err = body.get("error") if isinstance(body, dict) else None
         msg = err.get("message", "") if isinstance(err, dict) else ""
-        raise MetaError(f"HTTP {r.status_code}: {msg}"[:300])
+        code = err.get("code") if isinstance(err, dict) else None
+        raise MetaError(f"HTTP {r.status_code}: {msg}"[:300], code=code)
     return body if isinstance(body, dict) else {}
 
 
@@ -71,3 +74,11 @@ def list_instagram_accounts(token: str) -> list[dict]:
         if "id" in info:
             accounts.append({"id": info["id"], "username": info.get("username", "")})
     return accounts
+
+def list_media(token: str, ig_id: str, limit: int = 25) -> list[dict]:
+    data = _get(f"/{ig_id}/media", {
+        "fields": "id,media_type,media_url,permalink,timestamp",
+        "limit": limit,
+        "access_token": token,
+    })
+    return data.get("data", [])
