@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     base_url: str = "http://127.0.0.1:8000"
     meta_app_id: str = ""
     meta_app_secret: str = ""
+    meta_config_id: str = ""
+    meta_graph_version: str = "v26.0"
+    token_encryption_key: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
