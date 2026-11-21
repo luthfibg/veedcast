@@ -7,9 +7,14 @@
       Untuk layanan <strong>{{ tenant_name }}</strong>. Kami hanya membaca video
       dari akun Anda dan tidak pernah melihat password Anda.
     </p>
-    <button disabled class="mt-8 px-6 py-3 rounded-lg bg-slate-300 text-white">
-      Login Instagram (segera hadir)
-    </button>
+    <ul class="mt-4 text-sm text-slate-500 text-left list-disc pl-6 space-y-1">
+      <li>Akun harus bertipe Business atau Creator.</li>
+      <li>Video dengan audio berlisensi atau unduhan yang dimatikan tidak bisa ditayangkan.</li>
+    </ul>
+    <a href="/connect/{{ state }}/start"
+       class="inline-block mt-8 px-6 py-3 rounded-lg bg-slate-900 text-white">
+      Lanjutkan dengan Instagram
+    </a>
   {% else %}
     <h1 class="text-2xl font-bold">Tautan tidak berlaku</h1>
     <p class="mt-3 text-slate-600">

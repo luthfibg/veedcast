@@ -38,6 +38,7 @@ def connect_page(request: Request, state: str, db: Session = Depends(get_db)):
             "app_name": settings.app_name,
             "valid": valid,
             "tenant_name": tenant.name if tenant else None,
+            "state": state,
         },
         status_code=200 if valid else 410,
     )
