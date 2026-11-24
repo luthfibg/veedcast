@@ -1,27 +1,32 @@
 """Runner worker Veedcast.
 
 Pemakaian:
-    python -m worker.run [--max-seconds 240]
+    python -m worker.run [--max-seconds 360] [--skip-media]
 
-Sekali jalan: (1) pulihkan job macet, (2) buat job sync untuk akun yang
-sudah waktunya, (3) kerjakan antrian sampai habis atau waktu habis.
+Sekali jalan:
+  1. pulihkan job macet, jadwalkan sync akun yang sudah waktunya, bersihkan job lama
+  2. kerjakan antrian sync
+  3. proses video baru (unduh -> FFmpeg -> R2), lalu rapikan video lama
 Aman dijalankan dari cron GitHub Actions atau VPS.
 """
 import argparse
 import time
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.audit import log_action
 from app.db import SessionLocal, engine
 from app.models import IGAccount, Job, UsageDaily
 from app.services import instagram as ig
+from app.services import storage
 from app.utils import as_utc
+from worker.process import prune_all, process_pending, requeue_rotation_changes
 from worker.sync import sync_account
 
 SYNC_INTERVAL = timedelta(hours=3)
 STALE_LOCK = timedelta(minutes=15)
+JOB_RETENTION = timedelta(days=14)
 MAX_ATTEMPTS = 3
 # Kode error Meta untuk token tidak valid/dicabut.
 TOKEN_INVALID_CODES = {190}
@@ -40,6 +45,18 @@ def release_stale(db) -> int:
         j.locked_at = None
     db.commit()
     return len(jobs)
+
+
+def cleanup_jobs(db) -> int:
+    """Hapus job selesai/gagal yang lebih tua dari JOB_RETENTION."""
+    result = db.execute(
+        delete(Job).where(
+            Job.status.in_(("done", "failed")),
+            Job.created_at < utcnow() - JOB_RETENTION,
+        )
+    )
+    db.commit()
+    return result.rowcount or 0
 
 
 def enqueue_due_syncs(db) -> int:
@@ -154,15 +171,18 @@ def process_job(job_id: int) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--max-seconds", type=int, default=240)
+    parser.add_argument("--max-seconds", type=int, default=360)
+    parser.add_argument("--skip-media", action="store_true",
+                        help="hanya sinkronisasi, lewati unduh/proses video")
     args = parser.parse_args()
-    print(f"database={engine.url.get_backend_name()} host={engine.url.host or 'file lokal'}")
     deadline = time.monotonic() + args.max_seconds
 
+    print(f"database={engine.url.get_backend_name()} host={engine.url.host or 'file lokal'}")
     with SessionLocal() as db:
         released = release_stale(db)
         enqueued = enqueue_due_syncs(db)
-    print(f"dipulihkan={released} dijadwalkan={enqueued}")
+        cleaned = cleanup_jobs(db)
+    print(f"dipulihkan={released} dijadwalkan={enqueued} job_lama_dihapus={cleaned}")
 
     done = 0
     while time.monotonic() < deadline:
@@ -171,7 +191,21 @@ def main() -> None:
             break
         print(f"job #{job_id}: {process_job(job_id)}")
         done += 1
-    print(f"selesai, {done} job diproses")
+    print(f"sync selesai, {done} job diproses")
+
+    if args.skip_media:
+        return
+    if not storage.is_configured():
+        print("R2 belum dikonfigurasi: tahap unduh/proses video dilewati")
+        return
+
+    with SessionLocal() as db:
+        requeued = requeue_rotation_changes(db)
+    print(f"media: diproses ulang karena rotasi berubah={requeued}")
+    stats = process_pending(deadline)
+    with SessionLocal() as db:
+        pruned = prune_all(db)
+    print(f"media: {stats} dihapus_dari_r2={pruned}")
 
 
 if __name__ == "__main__":

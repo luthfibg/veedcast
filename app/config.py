@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     meta_config_id: str = ""
     meta_graph_version: str = "v26.0"
     token_encryption_key: str = ""
+    r2_account_token: str = ""
+    r2_access_key_id: str = ""
+    r2_secret_access_key: str = ""
+    r2_bucket_name: str = ""
+    r2_s3_endpoint: str = ""
+    download_url_ttl: int = 3600
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

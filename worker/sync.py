@@ -1,8 +1,7 @@
 """Sinkronisasi daftar video satu akun Instagram ke tabel media_items.
 
-Tahap 5A: hanya mendeteksi dan mencatat. Belum mengunduh apa pun.
-URL video (media_url) sengaja TIDAK disimpan karena bertanda tangan dan
-berumur pendek; tahap unduh akan mengambil URL segar per video.
+Hanya mendeteksi dan mencatat. URL video (media_url) sengaja TIDAK disimpan
+karena bertanda tangan dan berumur pendek; tahap proses meminta URL segar.
 """
 from datetime import datetime, timezone
 
@@ -13,7 +12,6 @@ from app.crypto import decrypt
 from app.models import IGAccount, MediaItem
 from app.services import instagram as ig
 
-# Alasan standar untuk video yang dilewati.
 SKIP_NO_URL = "no_download_url"
 
 
@@ -28,12 +26,8 @@ def parse_ts(value: str | None) -> datetime | None:
 
 
 def sync_account(db: Session, acc: IGAccount) -> dict:
-    """Ambil media terbaru akun, catat video yang belum dikenal.
-
-    Hanya `acc.max_active_videos` video terbaru yang dipertimbangkan, supaya
-    akun lama dengan ratusan video tidak diproses seluruhnya.
-    Tidak melakukan commit; pemanggil yang commit.
-    """
+    """Catat video terbaru akun. Hanya `acc.max_active_videos` video terbaru
+    yang dipertimbangkan. Tidak melakukan commit."""
     token = decrypt(acc.token_encrypted)
     items = ig.list_media(token, acc.ig_user_id, limit=25)
     videos = [i for i in items if i.get("media_type") == "VIDEO" and i.get("id")]
@@ -72,6 +66,13 @@ def sync_account(db: Session, acc: IGAccount) -> dict:
             # Klien mengubah pengaturan unduhan atau audio: coba lagi.
             m.status = "pending"
             m.skip_reason = None
+            m.attempts = 0
+            stats["recovered"] += 1
+        elif m.status == "removed" and has_url:
+            # Dihapus saat akun diputus lalu disambungkan lagi: proses ulang.
+            m.status = "pending"
+            m.skip_reason = None
+            m.attempts = 0
             stats["recovered"] += 1
 
     acc.last_synced_at = datetime.now(timezone.utc)
