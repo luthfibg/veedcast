@@ -14,7 +14,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 
 from app.audit import log_action
-from app.db import SessionLocal
+from app.db import SessionLocal, engine
 from app.models import IGAccount, Job, UsageDaily
 from app.services import instagram as ig
 from app.utils import as_utc
@@ -126,11 +126,15 @@ def process_job(job_id: int) -> str:
         acc = db.get(IGAccount, job.ig_account_id) if job.ig_account_id else None
 
         if job.kind != "sync" or acc is None or acc.status != "connected" or not acc.token_encrypted:
+            reason = (
+                "akun tidak ada" if acc is None
+                else f"status akun={acc.status}, token={'ada' if acc.token_encrypted else 'kosong'}"
+            )
             job.status = "done"
             job.locked_at = None
-            job.last_error = "dilewati: akun tidak aktif atau jenis job belum didukung"
+            job.last_error = f"dilewati: {reason}"
             db.commit()
-            return "skipped"
+            return f"skipped ({reason})"
 
         try:
             stats = sync_account(db, acc)
@@ -152,6 +156,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--max-seconds", type=int, default=240)
     args = parser.parse_args()
+    print(f"database={engine.url.get_backend_name()} host={engine.url.host or 'file lokal'}")
     deadline = time.monotonic() + args.max_seconds
 
     with SessionLocal() as db:
