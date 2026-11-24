@@ -2,7 +2,7 @@ from datetime import date, datetime, timezone
 
 from sqlalchemy import (
     JSON, BigInteger, Boolean, Date, DateTime, ForeignKey,
-    Index, Integer, String, Text, UniqueConstraint,
+    Index, Integer, String, Text, UniqueConstraint, Float
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -70,6 +70,11 @@ class MediaItem(Base):
     skip_reason: Mapped[str | None] = mapped_column(String(40))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    duration_s: Mapped[float | None] = mapped_column(Float)
+    width: Mapped[int | None] = mapped_column(Integer)
+    height: Mapped[int | None] = mapped_column(Integer)
+    rotation_applied: Mapped[int | None] = mapped_column(Integer)
 
 
 class Job(Base):

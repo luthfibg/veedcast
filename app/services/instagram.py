@@ -82,3 +82,6 @@ def list_media(token: str, ig_id: str, limit: int = 25) -> list[dict]:
         "access_token": token,
     })
     return data.get("data", [])
+
+def get_media(token: str, media_id: str) -> dict:
+    return _get(f"/{media_id}", {"fields": "id,media_type,media_url", "access_token": token})

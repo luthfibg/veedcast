@@ -39,3 +39,16 @@ class AccountUpdate(BaseModel):
     rotation: Literal[0, 90, 180, 270] | None = None
     max_active_videos: int | None = Field(default=None, ge=1, le=50)
     auto_publish: bool | None = None
+
+
+class MediaOut(BaseModel):
+    id: int
+    ig_media_id: str
+    permalink: str | None
+    posted_at: datetime | None
+    duration_s: float | None
+    width: int | None
+    height: int | None
+    size_bytes: int
+    download_url: str
+    expires_at: datetime

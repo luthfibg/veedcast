@@ -9,12 +9,13 @@ from app.audit import log_action
 from app.auth import get_tenant
 from app.config import settings
 from app.db import get_db
-from app.models import ConnectSession, IGAccount, Tenant
+from app.models import ConnectSession, IGAccount, Tenant, MediaItem
 from app.schemas import (
     AccountOut, AccountUpdate, ConnectSessionIn,
-    ConnectSessionOut, ConnectSessionStatus,
+    ConnectSessionOut, ConnectSessionStatus, MediaOut
 )
 from app.utils import as_utc, origin_of
+from app.services import storage
 
 router = APIRouter(prefix="/v1", tags=["v1"])
 
@@ -132,7 +133,6 @@ def update_account(
     db.commit()
     return acc
 
-
 @router.delete("/accounts/{account_id}", status_code=204)
 def disconnect_account(
     account_id: int,
@@ -144,7 +144,65 @@ def disconnect_account(
     acc.status = "revoked"
     acc.token_encrypted = None
     acc.token_expires_at = None
+    media_removed = _purge_media(db, acc)
     log_action(db, tenant.id, _actor(tenant), "account.disconnected",
-               {"account_id": acc.id, "username": acc.username}, request)
+               {"account_id": acc.id, "username": acc.username,
+                "media_removed": media_removed}, request)
     db.commit()
     return Response(status_code=204)
+
+@router.get("/accounts/{account_id}/media", response_model=list[MediaOut])
+def list_account_media(
+    account_id: int,
+    tenant: Tenant = Depends(get_tenant),
+    db: Session = Depends(get_db),
+):
+    acc = _get_account(db, tenant, account_id)
+    if not storage.is_configured():
+        raise HTTPException(status_code=503, detail="Penyimpanan belum dikonfigurasi")
+    items = db.scalars(
+        select(MediaItem)
+        .where(
+            MediaItem.ig_account_id == acc.id,
+            MediaItem.status == "processed",
+            MediaItem.storage_key.is_not(None),
+        )
+        .order_by(MediaItem.posted_at.desc().nullslast(), MediaItem.id.desc())
+        .limit(acc.max_active_videos)
+    ).all()
+    ttl = settings.download_url_ttl
+    expires = datetime.now(timezone.utc) + timedelta(seconds=ttl)
+    return [
+        MediaOut(
+            id=m.id,
+            ig_media_id=m.ig_media_id,
+            permalink=m.permalink,
+            posted_at=m.posted_at,
+            duration_s=m.duration_s,
+            width=m.width,
+            height=m.height,
+            size_bytes=m.bytes_out,
+            download_url=storage.presign_get(m.storage_key, ttl),
+            expires_at=expires,
+        )
+        for m in items
+    ]
+
+def _purge_media(db: Session, acc: IGAccount) -> int:
+    """Hapus file video akun dari R2. Gagal menghapus tidak menghalangi pemutusan."""
+    if not storage.is_configured():
+        return 0
+    removed = 0
+    for m in db.scalars(
+        select(MediaItem).where(
+            MediaItem.ig_account_id == acc.id, MediaItem.storage_key.is_not(None)
+        )
+    ):
+        try:
+            storage.delete_object(m.storage_key)
+        except Exception:  # noqa: BLE001
+            continue
+        m.storage_key = None
+        m.status = "removed"
+        removed += 1
+    return removed
